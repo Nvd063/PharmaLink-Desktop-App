@@ -1,47 +1,59 @@
 <?php
+
 namespace Database\Seeders;
 
-use App\Models\Product;
 use Illuminate\Database\Seeder;
+use App\Models\Product;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        $products = [
-            // --- Pain & Fever ---
-            ['name' => 'Panadol CF', 'price' => 250, 'stock' => 100, 'min_stock_level' => 20],
-            ['name' => 'Brufen 400mg', 'price' => 180, 'stock' => 50, 'min_stock_level' => 10],
-            ['name' => 'Disprin (Pack of 10)', 'price' => 50, 'stock' => 200, 'min_stock_level' => 30],
+        // Step 1: Sirf Products table ko clean karein (Bills ko touch nahi karega)
+        Schema::disableForeignKeyConstraints();
+        DB::table('products')->truncate(); 
+        Schema::enableForeignKeyConstraints();
 
-            // --- Protection & Hygiene (The "Protection" part) ---
-            ['name' => 'Durex Performa (3s)', 'price' => 650, 'stock' => 150, 'min_stock_level' => 5],
-            ['name' => 'Josh Strawberry (3s)', 'price' => 200, 'stock' => 250, 'min_stock_level' => 5],
-            ['name' => 'Surgical Face Masks (50pcs)', 'price' => 450, 'stock' => 100, 'min_stock_level' => 5], // Alert trigger
-            ['name' => 'Dettol Hand Sanitizer', 'price' => 320, 'stock' => 400, 'min_stock_level' => 8],
-
-            // --- Stomach & Digestion ---
-            ['name' => 'Gaviscon Syrup', 'price' => 280, 'stock' => 12, 'min_stock_level' => 5],
-            ['name' => 'Flagyl 400mg', 'price' => 120, 'stock' => 80, 'min_stock_level' => 15],
-            ['name' => 'Risek 20mg (Omeprazole)', 'price' => 450, 'stock' => 60, 'min_stock_level' => 10],
-
-            // --- Baby & Mother Care ---
-            ['name' => 'Pampers Size 4 (Small Pack)', 'price' => 1200, 'stock' => 8, 'min_stock_level' => 5],
-            ['name' => 'Johnson Baby Powder', 'price' => 350, 'stock' => 20, 'min_stock_level' => 5],
-            ['name' => 'Lactogen 1 (400g)', 'price' => 1850, 'stock' => 5, 'min_stock_level' => 3], // Alert trigger
-
-            // --- First Aid ---
-            ['name' => 'Saniplast (Band-aid)', 'price' => 5, 'stock' => 500, 'min_stock_level' => 50],
-            ['name' => 'Pyodine Solution', 'price' => 150, 'stock' => 30, 'min_stock_level' => 10],
-            ['name' => 'Cotton Roll (Small)', 'price' => 80, 'stock' => 25, 'min_stock_level' => 5],
-
-            // --- General Wellness ---
-            ['name' => 'Surbe-Z (Multivitamins)', 'price' => 380, 'stock' => 45, 'min_stock_level' => 10],
-            ['name' => 'Cac-1000 Plus', 'price' => 950, 'stock' => 30, 'min_stock_level' => 5],
+        $pharmacyItems = [
+            'Tablets & Capsules' => ['Panadol', 'Arinac', 'Augmentin', 'Risek', 'Surbex-Z', 'Lofnac', 'Flagyl', 'Zestril', 'Glucophage', 'Lipiget'],
+            'Syrups & Suspensions' => ['Hydryllin', 'Brufen Syrup', 'Cofcol', 'Gaviscon', 'Gravinate', 'Advent Syrup', 'Acefryl'],
+            'Injections' => ['Rocephin', 'Venofer', 'Dexamethasone', 'Insulin Mixtard', 'Dicloran Injection'],
+            'Surgical & Medical' => ['Face Masks (50s)', 'Gloves (Latex)', 'Bandage 4x5', 'Surgical Spirit', 'Digital Thermometer', 'Cannula 20G'],
+            'Skincare & Cosmetics' => ['Dettol Soap', 'Sunsilk Shampoo', 'Sensodyne Paste', 'Ponds Cream', 'Lifebuoy Handwash'],
+            'Baby Care' => ['Pampers Large', 'Canbebe XL', 'Johnson Baby Powder', 'Cerelac Rice', 'Morinaga BF-1', 'Lactogen 1'],
+            'Ointments & Creams' => ['Polyfax', 'Betnovate-N', 'Quench Cream', 'Miconazole', 'Voltral Emulgel']
         ];
 
-        foreach ($products as $product) {
-            Product::create($product);
+        // Step 2: 250+ Fresh Items with Expiry Dates
+        for ($i = 1; $i <= 250; $i++) {
+            $categoryName = array_rand($pharmacyItems);
+            $productBaseName = $pharmacyItems[$categoryName][array_rand($pharmacyItems[$categoryName])];
+
+            $suffixes = [' 500mg', ' 250mg', ' 1g', ' 120ml', ' 60ml', ' Pack', ' 20mg', ' 40mg'];
+            $finalName = $productBaseName . $suffixes[array_rand($suffixes)];
+
+            Product::create([
+                'name' => $finalName . " (" . fake()->unique()->numerify('LOT-####') . ")", 
+                'price' => fake()->randomFloat(2, 20, 3500),
+                'stock' => fake()->numberBetween(5, 200),
+                'min_stock_level' => fake()->randomElement([10, 15, 20]),
+                'expiry_date' => $this->getRandomExpiryDate(),
+            ]);
+        }
+    }
+
+    private function getRandomExpiryDate()
+    {
+        $chance = rand(1, 100);
+        if ($chance <= 10) { 
+            return Carbon::now()->subMonths(rand(1, 6)); // 10% Expired (Testing ke liye)
+        } elseif ($chance <= 25) {
+            return Carbon::now()->addDays(rand(1, 28)); // 15% Near Expiry (Alerts ke liye)
+        } else {
+            return Carbon::now()->addMonths(rand(6, 24)); // Baqi sab Safe
         }
     }
 }

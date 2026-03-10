@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Receipt;
-use App\Models\Customer;
-// use App\Models\ReceiptItem;
-// use App\Jobs\ProcessReceiptCommunication;
-// use Illuminate\Support\Facades\DB;
-// use Illuminate\Support\Str;
+use App\Models\ReceiptItem;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class ReceiptController extends Controller
@@ -28,16 +26,40 @@ class ReceiptController extends Controller
         // 1. SAARI PRODUCTS KO GET KAREIN (Taki modal mein list dikha sakein)
         $products = Product::all();
 
-        // 2. Low stock count (Agar aapka threshold 10 hai)
-        $lowStockCount = Product::where('stock', '<=', 10)->count();
+        // 2. Sirf low stock wali medicines (Stock <= 10)
+        $lowStockMedicines = Product::where('stock', '<=', 10)
+            ->orderBy('stock', 'asc') // Sab se kam wali upar aayein
+            ->get();
+
+        // 3. Count (Wahi purana)
+        $lowStockCount = $lowStockMedicines->count();
+
+        $topSelling = ReceiptItem::select('product_id', DB::raw('SUM(quantity) as total_sold'))
+            ->with('product') // Product ka naam lene ke liye
+            ->groupBy('product_id')
+            ->orderBy('total_sold', 'desc')
+            ->take(5) // Sirf top 5 dikhayein
+            ->get();
+
+
+        // near to Expire products
+        $nearExpiry = Product::where('expiry_date', '<=', now()->addDays(30))
+            ->where('expiry_date', '>', now())->orderBy('expiry_date', 'asc') // Jo expire ho chuki hain unhein chor kar
+            ->get();
+
+        $nearExpiryCount = $nearExpiry->count();
 
         // 3. Sab data view ko pass karein
         return view('dashboard', compact(
             'receipts',
+            'topSelling',
             'totalRevenue',
             'receiptsCount',
             'products',     // Yeh miss ho raha tha
-            'lowStockCount'
+            'lowStockCount',
+            'nearExpiryCount',
+            'nearExpiry',
+            'lowStockMedicines'
         ));
     }
 

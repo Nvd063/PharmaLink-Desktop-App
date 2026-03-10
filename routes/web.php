@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReceiptController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ReportController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -35,3 +37,9 @@ Route::middleware(['auth'])->group(function () {
 
 // Public View Route (Jo koi bhi scan karke dekh sake)
 Route::get('/view-receipt/{handle}', [ReceiptController::class, 'showPublic'])->name('receipt.public.view');
+
+Route::post('/products/store', [ProductController::class, 'store'])->name('products.store');
+Route::post('/products/bulk-restock', [ProductController::class, 'bulkRestock'])->name('products.bulk-restock');
+
+
+Route::get('/reports/download/{type}', [ReportController::class, 'downloadReport'])->name('reports.download');
