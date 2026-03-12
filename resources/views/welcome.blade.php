@@ -207,7 +207,7 @@ Start Managing Your Pharmacy Smarter
 PharmaLink helps pharmacies automate inventory, sales, and reporting.
 </p>
 
-<a href="{{ route('login') }}"
+<a href="{{ route('register') }}"
 class="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-semibold shadow-lg hover:bg-emerald-700">
 
 Get Started
